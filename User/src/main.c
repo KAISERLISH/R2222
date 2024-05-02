@@ -57,9 +57,8 @@ static void Task_Start(void *pdata)
 bool ifGet=false;
 u8 ifIdentify=0;
 bool ifPut=false;
-bool ifAllFindZero=false;
+//bool ifAllFindZero=false;
 bool ifEnable=false;
-bool ifFindZero=false;
 bool ifAllSetZero=true;
 enum BallType{Nothing,BadBall,GoodBall};
 enum BallType Balltype;
@@ -71,7 +70,7 @@ static void Get_TASK(void *pdata)
 	{
 		if(ifGet)
 		{
-			Valve_Ctrl(VCtr_Board);
+			Valve_Ctrl(0X10);
 			
 			DJmotor[DJ2006LR].begin=1;
 			DJmotor[DJ2006LR].mode=DJZERO;
@@ -80,11 +79,11 @@ static void Get_TASK(void *pdata)
 			Tmotor[0].valueSet.kp=0;
 			Tmotor[0].valueSet.kd=1;
 			Tmotor[0].valueSet.speed=10;
-			if((Tmotor[0].valueReal.Preanlge-Tmotor[0].valueReal.angle)<0.1)
+			if((Tmotor[0].valueReal.Preanlge-Tmotor[0].valueReal.angle)<0.1f)
 				Tmotor_stuck_cnt++;
 			else
 				Tmotor_stuck_cnt=0;
-			if(Tmotor_stuck_cnt>15)
+			if(Tmotor_stuck_cnt>45)
 			{
 				Tmotor[0].mode=TPos;
 				Tmotor[0].valueSet.angle=Tmotor[0].valueReal.angle;
@@ -126,12 +125,14 @@ static void Identify_TASK(void *pdata)
 			{
 				case BadBall:
 				{
-					Valve_Ctrl(VCtr_Stick|VCtr_Board);
+					Valve_Ctrl(0X00);
+					OSTimeDly(2000);
+					Valve_Ctrl(0X50);
 					Zdrive[DsBeltBack].begin=1;
 					Zdrive[DsBeltBack].mode=Zdrive_Speed;
 					Zdrive[DsBeltBack].ValueSet.speed=-200;
-					OSTimeDly(2000);
-					Valve_Ctrl(0);
+					OSTimeDly(20000);
+					Valve_Ctrl(0X10);
 					Zdrive[DsBeltBack].ValueSet.speed=0;
 					Balltype=Nothing;
 					ifIdentify=false;
@@ -139,20 +140,19 @@ static void Identify_TASK(void *pdata)
 
 				case GoodBall:
 				{
-					Valve_Ctrl(VCtr_Claw);
+					Valve_Ctrl(0X00);
 
-					if(ifIdentify&0x0f)
-					{
+
 						Tmotor[0].mode=TPosVel;
 						Tmotor[0].valueSet.angle=0;
 						Tmotor[0].valueSet.kp=1;
 						Tmotor[0].valueSet.kd=0.2;
-						Tmotor[0].valueSet.speed=-30;
-						if((Tmotor[0].valueReal.Preanlge-Tmotor[0].valueReal.angle)<0.1)
+						Tmotor[0].valueSet.speed=-35;
+						if((Tmotor[0].valueReal.Preanlge-Tmotor[0].valueReal.angle)<0.1f)
 							Tmotor_stuck_cnt++;
 						else 
 							Tmotor_stuck_cnt=0;
-						if(Tmotor_stuck_cnt>15)
+						if(Tmotor_stuck_cnt>45)
 						{
 							Tmotor_SetZero(1);
 							Tmotor[0].mode=TPos;
@@ -160,7 +160,6 @@ static void Identify_TASK(void *pdata)
 							Tmotor_stuck_cnt=0;
 							ifIdentify=ifIdentify&0xf0;
 						}
-					}
 
 					DJmotor[DJ3508UD].begin=1;
 					DJmotor[DJ3508UD].mode=DJZERO;
@@ -193,14 +192,14 @@ static void Put_TASK(void *pdata)
 	{
 		if(ifPut)
 		{
-			Valve_Ctrl(0);
-			OSTimeDly(1000);
+			Valve_Ctrl(0X10);
+			OSTimeDly(10000);
 			DJmotor[DJ3508UD].begin=1;
 			DJmotor[DJ3508UD].mode=DJZERO;
 			DJmotor[DJ3508UD].Limit.ZeroSP=2000;
 			DJmotor[DJ2006LR].begin=1;
 			DJmotor[DJ2006LR].mode=DJPOSITION;
-			DJmotor[DJ2006LR].valueSet.angle=0;
+			DJmotor[DJ2006LR].valueSet.angle=-30;
 	
 			ifPut=false;
 		}
@@ -212,15 +211,14 @@ static void Ctr_Task(void *pdata)
 {
 	while(1)
 	{
-//			Tmotor[0].enable=ifEnable;
-//			Zdrive[DsBeltBack].enable=ifEnable;
-//			Zdrive[DsBeltFront].enable=ifEnable;
-//			Zdrive[DsRoller].enable=ifEnable;
-//			DJmotor[DJ3508UD].enable=ifEnable;
-//			DJmotor[DJ2006LR].enable=ifEnable;
-//			DJmotor[DJ2006CAMERA].enable=ifEnable;
+			Tmotor[0].enable=ifEnable;
+			Zdrive[DsBeltBack].enable=ifEnable;
+			Zdrive[DsBeltFront].enable=ifEnable;
+			Zdrive[DsRoller].enable=ifEnable;
+			DJmotor[DJ3508UD].enable=ifEnable;
+			DJmotor[DJ2006LR].enable=ifEnable;
+			DJmotor[DJ2006CAMERA].enable=ifEnable;
 
-//			if(ifAllFindZero) ;
 			if(ifAllSetZero)		
 			{
 				DJ_SetZero(DJ2006CAMERA);
@@ -229,6 +227,7 @@ static void Ctr_Task(void *pdata)
 				Tmotor_SetZero(1);
 				ifAllSetZero=0;
 			}	
+			if(!(ifGet|ifIdentify)) Tmotor_stuck_cnt=0;
 		OSTimeDly(200);
 	}
 }
@@ -247,7 +246,7 @@ static void Task_LED(void *pdata)
 {
 	while(1)
 	{
-		Valve_Ctrl(0XFF);
+//		Valve_Ctrl(haha);
 		OSTimeDly(2000);
 	}
 }

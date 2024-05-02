@@ -27,8 +27,8 @@
 #define BeltBackSpeed 00
 
 #define VCtr_Board 0x00
-#define VCtr_Stick 0x00
-#define VCtr_Claw 0x00
+#define VCtr_Stick 0x10
+#define VCtr_Claw 0x40
 
 #define ClawPosXA 0
 #define ClawPosXB 1100
